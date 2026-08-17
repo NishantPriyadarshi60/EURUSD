@@ -1,0 +1,52 @@
+# Data layer configuration (spec §1).
+# Nothing about MT5 credentials lives here — those come from .env (MT5_LOGIN, MT5_PASSWORD, MT5_SERVER).
+
+symbol: EURUSD
+
+# Broker/account tag — every snapshot and every downstream cost-model result is stamped with this.
+# Per spec §6/§10: results do NOT transfer to another broker/account without re-validation.
+broker:
+  name: MetaQuotes-Demo
+  account_type: generic-demo
+  note: >
+    Generic MetaQuotes demo server. Known to retain only thin M5/M1 intrabar history
+    (verified 2026-08-17: M15 from 2022-08-08, M5 from 2025-04-24, M1 from 2026-05-19).
+    Spread/execution characteristics on this feed are NOT representative of a real
+    ECN or market-maker broker. Treat all cost-model results as provisional until
+    re-validated on a live-representative feed.
+
+# Broker server clock: MT5 bar timestamps are NOT UTC (spec §1.3). This account's server
+# follows EET/EEST (UTC+2 winter / UTC+3 summer, EU DST switch dates) — the same calendar
+# as the IANA zone below. All ingest code must convert through this, never assume UTC directly.
+broker_timezone: Europe/Bucharest
+
+timeframes:
+  # §3.1 — HTF directional gate, closed bars only. Two-timeframe system by design:
+  # H4 anchor + M15 entry, decided 2026-08-17 (see memory: validation-date-split).
+  htf_bias:
+    primary: H4
+    secondary_optional: D1   # config-toggleable extra confluence check, OFF by default —
+                              # enabling it adds another AND-gate, which cuts against the
+                              # §7.0 rule to loosen (not tighten) if the trade count is thin.
+  htf_bias_secondary_enabled: false
+  entry: [M15]              # §1.1 — the only entry TF, both by design and by data reality
+                             # (sufficient walk-forward-pool history on this account).
+  # M5 and M1 are excluded from v1 by deliberate design, not just deferred: M5 only has
+  # ~16 months of history on this account (from 2025-04-24) and M1 only ~3 months, but
+  # even setting data aside, collapsing to a clean two-TF system (H4 bias + M15 entry)
+  # is the fewer-robust-concepts choice per spec §0.4.
+  m5: excluded
+  intrabar: null            # §6 — no M1/tick stepping; using conservative fill-order fallback
+                             # instead (see configs/validation.yaml: intrabar_policy).
+
+# Verified history floors on this account (informational; ingest should still validate at pull time).
+history_floor:
+  D1: "2019-01-02"
+  H4: "2019-01-02"
+  M15: "2022-08-08"
+  M5: "2025-04-24"
+  M1: "2026-05-19"
+
+snapshot:
+  dir: data/snapshots
+  format: parquet

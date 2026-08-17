@@ -1,0 +1,36 @@
+# Cost model configuration (spec §6). Tagged to the broker/account in configs/data.yaml —
+# do not reuse these numbers for a different broker without re-validating (spec §6/§10).
+
+spread:
+  source: per_bar_mt5_spread   # use the bar's own observed 'spread' column (points),
+                                 # not a fixed assumed value -- this is REAL widening data
+                                 # from MT5 (news/rollover spikes included automatically),
+                                 # not a synthetic model. See data-quality note below.
+  data_quality_note: >
+    On this MetaQuotes-Demo account, ~50% of M15 bars report spread=0, which understates
+    true cost at those bars (a real broker rarely quotes a genuine 0 spread on EURUSD).
+    Treat spread-derived cost figures on this feed as a lower bound until re-validated on
+    a live-representative broker (see configs/data.yaml broker.note).
+  application: round_trip        # charged once per trade (see backtest/costs.py docstring
+                                   # for why: we only have one price series, presumed bid,
+                                   # not separate bid/ask series to charge each leg against)
+
+commission:
+  per_lot_round_trip: 7.0    # USD, config default -- adjust to the actual broker/account
+
+slippage:
+  base_pips: 0.2                  # applied to stop exits and (by default) market entries
+  spike_atr_multiple: 2.0           # a bar whose (high-low) range exceeds this many ATRs
+                                      # is treated as a "spike" -- extra slippage applies
+  spike_extra_pips: 1.0
+  apply_to_target_exits: false        # spec explicitly calls out "stops/market fills";
+                                        # limit-style target exits assumed better-filled
+  apply_to_market_entries: true
+
+swap:
+  rollover_hour_utc: 21     # config default (broker-specific; verify against the actual
+                              # account before trusting swap totals -- MT5 does not expose
+                              # this directly via symbol_info, so it must be confirmed
+                              # manually against the broker's rollover schedule)
+  triple_swap_weekday: 2      # 0=Mon ... standard FX triple-swap convention is Wednesday
+                                # rollover (covers the weekend) -- verify per broker

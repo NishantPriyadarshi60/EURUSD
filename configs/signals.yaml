@@ -1,0 +1,35 @@
+# Multi-timeframe bias & session/regime filter configuration (spec §3). All windows in
+# UTC (spec §3.2 — getting this wrong silently shifts every session-filtered signal;
+# see data/broker_time.py for the underlying UTC-conversion trap this avoids).
+
+htf_bias:
+  swing_n: 5   # fractal width for the single-resolution H4 structure computation.
+                # Deliberately a distinct, named parameter from primitives.yaml's
+                # n_external (also 5) -- same value today, but conflating "M15 external
+                # swing width" and "H4 swing width" as one parameter would be wrong the
+                # moment either needs to move independently.
+  htf_timeframe_hours: 4   # H4 bar duration, used to compute each HTF bar's close time
+                             # for the no-lookahead cross-timeframe alignment
+
+session:
+  # Spec's starting windows (§3.2), "adjust to validated values" -- these are the
+  # defaults, not yet empirically validated against this data.
+  windows:
+    - name: asian
+      start_utc: "00:00"
+      end_utc: "06:00"
+    - name: london
+      start_utc: "07:00"
+      end_utc: "10:00"
+    - name: london_ny_overlap
+      start_utc: "12:00"
+      end_utc: "16:00"
+    - name: ny
+      start_utc: "12:00"
+      end_utc: "15:00"
+
+regime:
+  method: adx
+  adx_period: 14
+  trending_threshold: 25    # ADX >= this -> trending
+  ranging_threshold: 20      # ADX <= this -> ranging; between the two -> "transitional"

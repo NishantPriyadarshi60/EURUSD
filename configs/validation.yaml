@@ -1,0 +1,45 @@
+# Validation protocol configuration (spec §7). This is the single source of truth for the
+# date partitioning and walk-forward schedule — do not hardcode dates elsewhere.
+#
+# Locked 2026-08-17, revised same day after empirical data-availability probing (see memory:
+# validation-date-split). Do not adjust start/end dates or window sizes based on backtest
+# results from this point forward — that would be a degrees-of-freedom leak (spec §0.4, §7.3).
+
+walk_forward:
+  pool_start: "2022-09-01"
+  pool_end: "2025-08-17"        # exclusive upper bound; OOS vault begins here
+  optimize_months: 12
+  test_months: 3
+  step_months: 3
+  # Fold schedule is derived mechanically from the parameters above — do not hand-edit folds.
+  # Reference (for audit): 8 folds, last truncated to ~2.5 months
+  #   1: opt 2022-09-01..2023-09-01 | test 2023-09-01..2023-12-01
+  #   2: opt 2022-12-01..2023-12-01 | test 2023-12-01..2024-03-01
+  #   3: opt 2023-03-01..2024-03-01 | test 2024-03-01..2024-06-01
+  #   4: opt 2023-06-01..2024-06-01 | test 2024-06-01..2024-09-01
+  #   5: opt 2023-09-01..2024-09-01 | test 2024-09-01..2024-12-01
+  #   6: opt 2023-12-01..2024-12-01 | test 2024-12-01..2025-03-01
+  #   7: opt 2024-03-01..2025-03-01 | test 2025-03-01..2025-06-01
+  #   8: opt 2024-06-01..2025-06-01 | test 2025-06-01..2025-08-17 (truncated)
+
+oos_vault:
+  start: "2025-08-17"
+  end: "2026-08-17"
+  note: >
+    Sealed. Must not be read, plotted, or evaluated against until the system is fully built
+    and validated on the walk-forward pool. Evaluated exactly once, at the end of Phase 3.
+
+intrabar_policy:
+  mode: conservative_worst_case   # spec §6 fallback: no M1/tick stepping available on this
+                                   # account for the full pool; when a bar's range contains
+                                   # both the stop and the target, assume the worse fill order.
+  reason: >
+    M1 history on this account only extends to 2026-05-19 (~3 months), far short of the
+    walk-forward pool. Using true intrabar stepping would silently restrict the backtest to
+    a tiny recent window. The conservative fallback is documented in spec §6 and applies
+    uniformly across the whole pool and OOS vault.
+
+min_trade_count:
+  warn_below: 100
+  reject_below: 50
+  note: "Spec §7.0/§7.4 — anything under ~100-200 trades is statistically uninformative."

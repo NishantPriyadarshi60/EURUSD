@@ -1,0 +1,45 @@
+# Core primitive parameters (spec §2). These are starting-default hypotheses, not tuned
+# values — they get swept for plateau-vs-peak sensitivity (§7.2) during validation, not
+# hand-picked to make a chart look right (§0.4, §11).
+
+atr:
+  period: 14
+
+swings:
+  method: fractal        # alternative: zigzag (behind a flag, not built in v1 — §2.1)
+  n_internal: 2           # N_int — entry-timing swings (§2.1, §2.2)
+  n_external: 5            # N_ext — bias/structure swings (§2.1, §2.2)
+
+structure:
+  mode: dual               # dual | single — single kept for the §2.2 ablation run
+
+sweep:
+  tol_atr: 0.1              # sweep_tol — default 0.1 x ATR (§2.5)
+  window_bars: 3             # sweep_window — default 1-3 candles, use 3 as the outer bound
+
+order_block:
+  require_displacement: true  # §2.6 quality gate
+  zone: wick                  # wick | body (body kept behind a flag)
+
+support_resistance:
+  tol_atr: 0.15               # sr_tol (§2.7)
+
+equal_highs_lows:
+  tol_atr: 0.1                 # eqh_tol (§2.8)
+
+displacement:
+  body_ratio_min: 0.6           # disp_body (§2.9)
+  atr_multiple_min: 1.5          # disp_k (§2.9)
+
+premium_discount:
+  min_leg_atr: 3                  # min-leg guard (§2.10) — required leg size before drawing a range
+  equilibrium: 0.5                  # 50% Fib midpoint
+
+fvg:
+  enabled: false             # §2.11 — off by default in v1, per spec recommendation
+
+inducement:
+  enabled: false               # §2.13 — experimental, Phase 3 only, not in v1
+
+fakeout:
+  window_bars: 3               # fakeout_window (§2.14), reuses sweep machinery
