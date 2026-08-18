@@ -22,6 +22,15 @@ class RiskLimitsConfig:
     max_concurrent_positions: int
 
 
+def load_risk_limits_config(raw: dict) -> RiskLimitsConfig:
+    limits = raw["limits"]
+    return RiskLimitsConfig(
+        max_daily_loss_fraction=limits["max_daily_loss_fraction"],
+        max_weekly_loss_fraction=limits["max_weekly_loss_fraction"],
+        max_concurrent_positions=limits["max_concurrent_positions"],
+    )
+
+
 @dataclass
 class RiskManager:
     """Reactive state machine: call `can_open` before opening a trade, `register_open`

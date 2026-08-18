@@ -1,6 +1,14 @@
 import pandas as pd
 
-from risk.limits import RiskLimitsConfig, RiskManager
+from risk.limits import RiskLimitsConfig, RiskManager, load_risk_limits_config
+from configs.loader import load as load_config
+
+
+def test_load_risk_limits_config_from_real_config_file():
+    cfg = load_risk_limits_config(load_config("risk"))
+    assert cfg.max_daily_loss_fraction == 0.03
+    assert cfg.max_weekly_loss_fraction == 0.06
+    assert cfg.max_concurrent_positions == 1
 
 
 def test_max_concurrent_positions_blocks_until_close():

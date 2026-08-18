@@ -1,0 +1,16 @@
+# Risk, sizing, and execution configuration (spec §5). Starting defaults per spec's own
+# suggested ranges -- not tuned, subject to the same sensitivity scrutiny (§7.2) as
+# everything else once real walk-forward results exist to judge them against.
+
+sizing:
+  risk_fraction_per_trade: 0.01   # 1% of equity, mid-point of spec's suggested 0.5-1%
+
+stops_targets:
+  stop_atr_multiple: 1.5      # ATR-scaled stop (spec §5 option) -- entry -/+ 1.5xATR
+  target_r_multiple: 2.0        # fixed R-multiple target (spec §5 option) -- 2R,
+                                  # i.e. target ATR multiple = stop_atr_multiple * target_r_multiple
+
+limits:
+  max_daily_loss_fraction: 0.03    # halts new entries for the rest of the calendar day
+  max_weekly_loss_fraction: 0.06     # halts new entries for the rest of the ISO week
+  max_concurrent_positions: 1          # see backtest/run.py -- only 1 is implemented

@@ -12,6 +12,7 @@ plateau classifier.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -48,3 +49,50 @@ def high_overlap_pairs(matrix: pd.DataFrame, threshold: float) -> list[Correlati
                 findings.append(CorrelationFinding(a, b, float(corr)))
     findings.sort(key=lambda f: -abs(f.correlation))
     return findings
+
+
+def max_possible_phi(p_a: float, p_b: float) -> float:
+    """Theoretical ceiling on |phi| (Pearson correlation on 0/1 data) achievable
+    between two binary flags with given marginal probabilities — reached only under
+    perfect containment (the rarer flag implies the more common one). Two flags with
+    very different base rates CANNOT show a high raw phi even if one perfectly implies
+    the other, so a low raw reading is not, by itself, evidence of true independence
+    when marginals are skewed and dissimilar. Spec's own point about the internal/
+    external BOS pair (the "frequency trap") is a special case of this general fact —
+    it applies to any pair of dissimilar-rate flags, not just the one spec named.
+    """
+    if not (0 < p_a < 1) or not (0 < p_b < 1):
+        return float("nan")
+    lo, hi = min(p_a, p_b), max(p_a, p_b)
+    return math.sqrt((lo / (1 - lo)) * ((1 - hi) / hi))
+
+
+@dataclass(frozen=True)
+class NormalizedOverlap:
+    flag_a: str
+    flag_b: str
+    correlation: float
+    max_possible: float
+    normalized: float   # |correlation| / max_possible -- how close to its OWN ceiling
+
+
+def compute_normalized_overlap(matrix: pd.DataFrame, base_rates: dict[str, float]) -> list[NormalizedOverlap]:
+    """For every pair, express the observed correlation as a fraction of the maximum
+    that pair's OWN marginals could ever produce — surfaces pairs whose raw |phi| looks
+    low only because dissimilar base rates cap it there, not because the flags are
+    genuinely weakly associated. Sorted by normalized value descending, so a pair sitting
+    near its own ceiling shows up first even if its raw correlation looked unremarkable.
+    """
+    results: list[NormalizedOverlap] = []
+    cols = list(matrix.columns)
+    for i, a in enumerate(cols):
+        for b in cols[i + 1:]:
+            corr = matrix.loc[a, b]
+            if pd.isna(corr) or a not in base_rates or b not in base_rates:
+                continue
+            cap = max_possible_phi(base_rates[a], base_rates[b])
+            if pd.isna(cap) or cap == 0:
+                continue
+            results.append(NormalizedOverlap(a, b, float(corr), cap, float(abs(corr) / cap)))
+    results.sort(key=lambda r: -r.normalized)
+    return results
